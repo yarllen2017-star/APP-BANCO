@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: bills
+    // Fields:
+    //   - description: string (1-100 chars)
+    //   - value: number (positive)
+    //   - dueDate: string (ISO 8601)
+    //   - totalInstallments: number (>= 1)
+    //   - paidInstallments: number (>= 0)
+    //   - status: string ('pending', 'paid')
+    //   - userId: string (matches auth.uid)
+    //
+    // Collection: users
+    // Fields:
+    //   - monthlyIncome: number (>= 0)
+    //   - userId: string (matches auth.uid)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidBill(data) {
+      return data.description is string && data.description.size() > 0 && data.description.size() <= 100 &&
+             data.value is number && data.value >= 0 &&
+             data.dueDate is string && data.dueDate.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$") &&
+             data.totalInstallments is number && data.totalInstallments >= 1 &&
+             data.paidInstallments is number && data.paidInstallments >= 0 &&
+             data.status in ['pending', 'paid'] &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidUserProfile(data) {
+      return data.monthlyIncome is number && data.monthlyIncome >= 0 &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidIncome(data) {
+      return data.description is string && data.description.size() > 0 && data.description.size() <= 100 &&
+             data.value is number && data.value >= 0 &&
+             data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$") &&
+             data.userId == request.auth.uid;
+    }
+
+    match /bills/{billId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidBill(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidBill(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /incomes/{incomeId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidIncome(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidIncome(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+    }
+  }
+}

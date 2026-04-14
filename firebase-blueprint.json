@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "Bill": {
+      "title": "Bill",
+      "description": "A recurring or single bill to be paid.",
+      "type": "object",
+      "properties": {
+        "description": { "type": "string", "description": "What the bill is for." },
+        "value": { "type": "number", "description": "The amount of the bill." },
+        "dueDate": { "type": "string", "format": "date-time", "description": "The next due date." },
+        "totalInstallments": { "type": "number", "description": "Total number of installments." },
+        "paidInstallments": { "type": "number", "description": "Number of installments already paid." },
+        "status": { "type": "string", "enum": ["pending", "paid"], "description": "Current status of the current installment." },
+        "userId": { "type": "string", "description": "The owner of the bill." }
+      },
+      "required": ["description", "value", "dueDate", "totalInstallments", "paidInstallments", "status", "userId"]
+    },
+    "Income": {
+      "title": "Income",
+      "description": "An income entry (salary, bonus, etc.).",
+      "type": "object",
+      "properties": {
+        "description": { "type": "string", "description": "Source of income." },
+        "value": { "type": "number", "description": "Amount received." },
+        "date": { "type": "string", "format": "date-time", "description": "Date received." },
+        "userId": { "type": "string", "description": "The owner of the income." }
+      },
+      "required": ["description", "value", "date", "userId"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User specific settings and info.",
+      "type": "object",
+      "properties": {
+        "monthlyIncome": { "type": "number", "description": "The user's monthly income." },
+        "userId": { "type": "string", "description": "The user ID." }
+      },
+      "required": ["monthlyIncome", "userId"]
+    }
+  },
+  "firestore": {
+    "/bills/{billId}": {
+      "schema": "Bill",
+      "description": "Collection of bills."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles containing income info."
+    }
+  }
+}
